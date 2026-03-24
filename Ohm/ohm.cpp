@@ -11,6 +11,9 @@
 
 typedef unsigned long uint32_t;
 
+static const double e24MaxValue = 91000.0;
+static const double e24MinValue = 0.01;
+
 double pow10OfVal( const double value ) {
 	static const size_t pow10ArraySize = 18;
 	static const double pow10[pow10ArraySize] = { 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9 };
@@ -102,19 +105,23 @@ void E24ResByVoltage( const double voltage, const double resistance, double accu
 	printf("Voltage:           %0.3lf\n", voltage );
 	printf("Current:           %0.6lf\n", IR );
 	printf("Power dissipation: %0.3lf\n", PR );
-	printf("\n");	
-	printf("Resistor(E24):     %0.2lf [%0.2lf .. %0.2lf]\n", resMin, resMinRealMin, resMinRealMax );
-	printf("Voltage:           %0.3lf\n", voltage );
-	printf("Current:           %0.6lf .. %0.6lf\n", IRminMin, IRminMax );
-	printf("Power dissipation: %0.3lf .. %0.3lf\n", PRminMin, PRminMax );
 	printf("\n");
-	if ( resMax != resMin ) {
+	
+	if ( (resMin >= e24MinValue) && (resMin <= e24MaxValue) ) {	
+		printf("Resistor(E24):     %0.2lf [%0.2lf .. %0.2lf]\n", resMin, resMinRealMin, resMinRealMax );
+		printf("Voltage:           %0.3lf\n", voltage );
+		printf("Current:           %0.6lf .. %0.6lf\n", IRminMin, IRminMax );
+		printf("Power dissipation: %0.3lf .. %0.3lf\n", PRminMin, PRminMax );
+		printf("\n");
+	}
+	if ( ( resMax != resMin ) && (resMax >= e24MinValue) && ( resMax <= e24MaxValue) ) {	
 		printf("Resistor(E24):     %0.2lf [%0.2lf .. %0.2lf]\n", resMax, resMaxRealMin, resMaxRealMax );
 		printf("Voltage:           %0.3lf\n", voltage );
 		printf("Current:           %0.6lf .. %0.6lf\n", IRmaxMin, IRmaxMax );
 		printf("Power dissipation: %0.3lf .. %0.3lf\n", PRmaxMin, PRmaxMax );
 		printf("\n");
 	}
+	
 }
 
 void E24ResByCurrent( const double current, const double resistance, double accuracy ) {
@@ -151,19 +158,23 @@ void E24ResByCurrent( const double current, const double resistance, double accu
 	printf("Voltage:           %0.3lf\n", voltage );
 	printf("Current:           %0.6lf\n", current );
 	printf("Power dissipation: %0.3lf\n", PR );
-	printf("\n");	
-	printf("Resistor(E24):     %0.2lf [%0.2lf .. %0.2lf]\n", resMin, resMinRealMin, resMinRealMax );
-	printf("Voltage:           %0.3lf .. %0.2lf\n", URminMax, URminMin );
-	printf("Current:           %0.6lf\n", current );
-	printf("Power dissipation: %0.3lf .. %0.3lf\n", PRminMax, PRminMin );
 	printf("\n");
-	if ( resMax != resMin ) {	
+		
+	if ( (resMin >= e24MinValue) && (resMin <= e24MaxValue) ) {	
+		printf("Resistor(E24):     %0.2lf [%0.2lf .. %0.2lf]\n", resMin, resMinRealMin, resMinRealMax );
+		printf("Voltage:           %0.3lf .. %0.2lf\n", URminMax, URminMin );
+		printf("Current:           %0.6lf\n", current );
+		printf("Power dissipation: %0.3lf .. %0.3lf\n", PRminMax, PRminMin );
+		printf("\n");
+	}
+	if ( ( resMax != resMin ) && (resMax >= e24MinValue) && ( resMax <= e24MaxValue) ) {	
 		printf("Resistor(E24):     %0.2lf [%0.2lf .. %0.2lf]\n", resMax, resMaxRealMin, resMaxRealMax );
 		printf("Voltage:           %0.3lf .. %0.2lf\n", URmaxMax, URmaxMin );
 		printf("Current:           %0.6lf\n", current );
 		printf("Power dissipation: %0.3lf .. %0.3lf\n", PRmaxMax, PRmaxMin );
 		printf("\n");
 	}
+
 }
 
 
@@ -171,6 +182,11 @@ void E24ResByCurrent( const double current, const double resistance, double accu
 
 
 int main( const int argc, const char* argv[] ) {
+	
+	const double MaxPossibleVoltage = 1e8;
+	const double MaxPossibleCurrent = 1e3;
+	const double MaxPossibleResistance = 1e10;
+	const double MaxPossiblePower = 1e3;
 	
 	double resistance = 0;
 	double voltage = 0;
@@ -181,9 +197,8 @@ int main( const int argc, const char* argv[] ) {
 	int useI = 0;
 	int useR = 0;
 	int useP = 0;
-
-	
-	if ( argc == 3 ) {
+		
+	while ( argc == 3 ) {
 	
 		useU = sscanf( argv[1], "U=%lf", &voltage );
 		useI = sscanf( argv[1], "I=%lf", &current );
@@ -194,6 +209,16 @@ int main( const int argc, const char* argv[] ) {
 		if ( 0 == useI ) useI = sscanf( argv[2], "I=%lf", &current );
 		if ( 0 == useR ) useR = sscanf( argv[2], "R=%lf", &resistance );
 		if ( 0 == useP ) useP = sscanf( argv[2], "P=%lf", &power );
+		
+				
+		if ( ( useU && ( ( 0.0 >= voltage ) || ( voltage > MaxPossibleVoltage ) ) ) ||
+			 ( useI && ( ( 0.0 >= current ) || ( current > MaxPossibleCurrent ) ) ) ||
+			 ( useR && ( ( 0.0 >= resistance ) || ( resistance > MaxPossibleResistance ) ) ) ||
+			 ( useP && ( ( 0.0 >= power ) || ( power > MaxPossiblePower ) ) ) ) {
+			printf("Please check parameters\n");
+			printf("\n");
+			break;
+		}
 		
 		if ( 0 != useP) {
 			if ( 0 != useI ) {			
@@ -220,7 +245,7 @@ int main( const int argc, const char* argv[] ) {
 			printf("**************************\n");
 			E24ResByCurrent( current, resistance, 0.05 );
 		} else if ( ( 0 != useI ) && ( 0 != useU ) ) {
-			// Use voltage and current
+			// Use voltage and current			
 			resistance = voltage / current;
 			printf("**************************\n");
 			printf("*** Fixed Voltage Mode ***\n");
@@ -230,16 +255,32 @@ int main( const int argc, const char* argv[] ) {
 			printf("*** Fixed Current Mode ***\n");
 			printf("**************************\n");
 			E24ResByCurrent( current, resistance, 0.05 );
+		} else {
+			break;
 		}
+		
+		return 0;
+	}
 	
-	} else {
-		printf("E24 Resistance calculation tool\n");
+	{
+		printf("Simple E24 Resistance calculation tool\n");
+		printf("© Evgeny Sobolev hwswdevsev@gmail.com, +79003030374, personal usage propose\n");
+		printf("So, I made it for myself, when I have to calculte resistance by maximum power & maximum voltage & current\n");
+		printf("But, you can use it by yourself. Author didn't provide any guarantees.\n\n");
+		
 		printf("Usage:\n"); 
 		printf("1. ohm U=[Voltage, Volt]  R=[Resistance,  Ohm]\n");
 		printf("2. ohm I=[Current, Amper] R=[Resistance, Ohm]\n");
 		printf("3. ohm U=[Voltage, Volt]  I=[Current, Amper]\n");
 		printf("4. ohm I=[Current, Amper] P=[Power, Watt]\n");
 		printf("5. ohm U=[Voltage, Volt]  P=[Power, Watt]\n");
+		printf("\n");
+		printf("Examples:\n");
+		printf("ohm U=10 I=1e-3\n");
+		printf("i.e. calc params, if voltage is 10 volts, current is 1 milliamper\n");
+		printf("ohm U=1 R=1e-2\n");
+		printf("i.e. calc params, if voltage is 1 volt, resistance is 0.01 Ohm\n");
+		printf("\n");
+		
 	}
-
 }
